@@ -203,18 +203,9 @@ export class Trx extends BaseCoin {
   }
 
   signTransaction(params: TronSignTransactionOptions): SignedTransaction {
-    const coinName = this.getChain();
-    const txBuilder = new bitgoAccountLib.TransactionBuilder({ coinName });
+    const txBuilder = bitgoAccountLib.getBuilder(this.getChain());
     txBuilder.from(params.txPrebuild.txHex);
-
-    let key = params.prv;
-    if (this.isValidXprv(params.prv)) {
-      key = HDNode.fromBase58(params.prv)
-        .getKey()
-        .getPrivateKeyBuffer();
-    }
-
-    txBuilder.sign({ key });
+    txBuilder.sign({ key: params.prv });
     const transaction = txBuilder.build();
     const response = {
       txHex: JSON.stringify(transaction.toJson()),
@@ -471,7 +462,7 @@ export class Trx extends BaseCoin {
       self.checkPermissions(account.active_permission[0].keys, keyHexAddresses);
 
       // construct our tx
-      const txBuilder = new bitgoAccountLib.TransactionBuilder({ coinName: this.getChain() });
+      const txBuilder = bitgoAccountLib.getBuilder(this.getChain());
       txBuilder.from(buildTx);
 
       // this tx should be enough to drop into a node
@@ -517,14 +508,13 @@ export class Trx extends BaseCoin {
       if (!txHex || !params.feeInfo) {
         throw new Error('missing explain tx parameters');
       }
-      const coinName = this.getChain();
-      const txBuilder = new bitgoAccountLib.TransactionBuilder({ coinName });
+      const txBuilder = bitgoAccountLib.getBuilder(this.getChain());
       txBuilder.from(txHex);
-      const tx = txBuilder.build();
+      const tx = txBuilder.build() as bitgoAccountLib.Trx.Transaction;
       const outputs = [
         {
-          amount: tx.destinations[0].value.toString(),
-          address: tx.destinations[0].address, // Should turn it into a readable format, aka base58
+          amount: tx.outputs[0].value.toString(),
+          address: tx.outputs[0].address, // Should turn it into a readable format, aka base58
         },
       ];
 
